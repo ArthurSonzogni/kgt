@@ -18,10 +18,11 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "io.h"
 
-static void output_alt(const struct ast_rule *grammar, const struct ast_alt *alt);
+static void output_alt(struct context* context, const struct ast_rule *grammar, const struct ast_alt *alt);
 
 static int
 escputc(int c, FILE *f)
@@ -89,49 +90,49 @@ escputt(const struct txt *t, FILE *f)
 }
 
 static void
-output_group(const struct ast_rule *grammar,
+output_group(struct context* context, const struct ast_rule *grammar,
 	const struct ast_term *term, const struct ast_alt *group)
 {
 	const struct ast_alt *alt;
 
 	for (alt = group; alt != NULL; alt = alt->next) {
-		printf("\t\"t%p\" -> \"a%p\";\n",
+		fprintf(context->out, "\t\"t%p\" -> \"a%p\";\n",
 			(void *) term, (void *) alt);
 
-		output_alt(grammar, alt);
+		output_alt(context, grammar, alt);
 	}
 }
 
 static void
-output_term(const struct ast_rule *grammar,
+output_term(struct context* context, const struct ast_rule *grammar,
 	const struct ast_alt *alt, const struct ast_term *term)
 {
 	assert(term->max >= term->min || !term->max);
 
-	printf("\t\"a%p\" -> \"t%p\"",
+	fprintf(context->out,"\t\"a%p\" -> \"t%p\"",
 		(void *) alt, (void *) term);
 	if (term->invisible) {
-		printf(" [ color = blue, style = dashed ]");
+		fprintf(context->out," [ color = blue, style = dashed ]");
 	}
-	printf(";\n");
+	fprintf(context->out,";\n");
 
-	printf("\t\"t%p\" [ shape = record, ",
+	fprintf(context->out,"\t\"t%p\" [ shape = record, ",
 		(void *) term);
 
 	if (term->invisible) {
-		printf("color = blue, fontcolor = blue, style = \"rounded,dashed\", ");
+		fprintf(context->out,"color = blue, fontcolor = blue, style = \"rounded,dashed\", ");
 	}
 
-	printf("label = \"");
+	fprintf(context->out,"label = \"");
 
 	if (term->min == 1 && term->max == 1) {
 		/* nothing */
 	} else if (!term->max) {
-		printf("\\{%u,""\\}&times;|", term->min);
+		fprintf(context->out,"\\{%u,""\\}&times;|", term->min);
 	} else if (term->min == term->max) {
-		printf("%u&times;|", term->min);
+		fprintf(context->out,"%u&times;|", term->min);
 	} else {
-		printf("\\{%u,%u\\}&times;|", term->min, term->max);
+		fprintf(context->out,"\\{%u,%u\\}&times;|", term->min, term->max);
 	}
 
 	switch (term->type) {
@@ -164,11 +165,11 @@ output_term(const struct ast_rule *grammar,
 		break;
 
 	case TYPE_GROUP:
-		printf("()");
+		fprintf(context->out,"()");
 		break;
 	}
 
-	printf("\" ];\n");
+	fprintf(context->out,"\" ];\n");
 
 	switch (term->type) {
 	case TYPE_EMPTY:
@@ -176,7 +177,7 @@ output_term(const struct ast_rule *grammar,
 
 	case TYPE_RULE:
 /* XXX: cross-links to rules are confusing
-		printf("\t\"t%p\" -> \"p%p\" [ dir = forward, color = blue, weight = 0 ];\n",
+		fprintf(context->out,"\t\"t%p\" -> \"p%p\" [ dir = forward, color = blue, weight = 0 ];\n",
 			(void *) term, term->u.rule);
 */
 		break;
@@ -185,64 +186,64 @@ output_term(const struct ast_rule *grammar,
 	case TYPE_CS_LITERAL:
 	case TYPE_TOKEN:
 	case TYPE_PROSE:
-		printf("\t\"t%p\" [ style = filled",
+		fprintf(context->out,"\t\"t%p\" [ style = filled",
 			(void *) term);
 
 		if (term->invisible) {
-			printf(", color = blue, fillcolor = aliceblue, style = \"dashed,filled\" ");
+			fprintf(context->out,", color = blue, fillcolor = aliceblue, style = \"dashed,filled\" ");
 		}
 
-		printf("];\n");
+		fprintf(context->out,"];\n");
 		break;
 
 	case TYPE_GROUP:
-		output_group(grammar, term, term->u.group);
+		output_group(context, grammar, term, term->u.group);
 		break;
 	}
 }
 
 static void
-output_alt(const struct ast_rule *grammar,
+output_alt(struct context* context, const struct ast_rule *grammar,
 	const struct ast_alt *alt)
 {
 	const struct ast_term *term;
 
-	printf("\t\"a%p\" [ label = \"|\"",
+	fprintf(context->out,"\t\"a%p\" [ label = \"|\"",
 		(void *) alt);
 
 if (alt->invisible) {
-	printf(", color = blue ");
+	fprintf(context->out,", color = blue ");
 }
 
-	printf("];\n");
+	fprintf(context->out,"];\n");
 
 	for (term = alt->terms; term != NULL; term = term->next) {
-		output_term(grammar, alt, term);
+		output_term(context, grammar, alt, term);
 	}
 }
 
 static void
-output_alts(const struct ast_rule *grammar,
+output_alts(struct context* context, const struct ast_rule *grammar,
 	const struct ast_rule *rule, const struct ast_alt *alts)
 {
 	const struct ast_alt *alt;
 
 	for (alt = alts; alt != NULL; alt = alt->next) {
-		printf("\t\"p%p\" -> \"a%p\";\n",
+		fprintf(context->out,"\t\"p%p\" -> \"a%p\";\n",
 			(void *) rule, (void *) alt);
 
-		output_alt(grammar, alt);
+		output_alt(context, grammar, alt);
 	}
 }
 
 static void
-output_rule(const struct ast_rule *grammar,
+output_rule(struct context* context, const struct ast_rule *grammar,
 	const struct ast_rule *rule)
 {
-	printf("\t\"p%p\" [ shape = record, label = \"=|%s\" ];\n",
+	fprintf(context->out,"\t\"p%p\" [ shape = record, label = \"=|%s\" ];\n",
 		(void *) rule, rule->name);
 
-	output_alts(grammar, rule, rule->alts);
+	output_alts(context, grammar, rule, rule->alts);
 }
 
 void
@@ -250,14 +251,14 @@ dot_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
-	printf("digraph G {\n");
-	printf("\tnode [ shape = box, style = rounded ];\n");
-	printf("\tedge [ dir = none ];\n");
+	fprintf(context->out,"digraph G {\n");
+	fprintf(context->out,"\tnode [ shape = box, style = rounded ];\n");
+	fprintf(context->out,"\tedge [ dir = none ];\n");
 
 	for (p = grammar; p != NULL; p = p->next) {
-		output_rule(grammar, p);
+		output_rule(context, grammar, p);
 	}
 
-	printf("}\n");
+	fprintf(context->out,"}\n");
 }
 

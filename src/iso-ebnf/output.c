@@ -44,7 +44,7 @@ output_group(struct context* context, const struct ast_alt *group)
 		output_group_alt(context, alt);
 
 		if (alt->next != NULL) {
-			printf(" |");
+			fprintf(context->out," |");
 		}
 	}
 }
@@ -87,7 +87,7 @@ output_term(struct context* context, const struct ast_term *term)
 	/* EBNF cannot express minimum term repetition; TODO: semantic checks for this */
 	assert(term->min <= 1);
 
-	printf("%s", s);
+	fprintf(context->out,"%s", s);
 
 	switch (term->type) {
 	case TYPE_EMPTY:
@@ -95,11 +95,11 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_RULE:
-		printf(" %s", term->u.rule->name);
+		fprintf(context->out," %s", term->u.rule->name);
 		break;
 
 	case TYPE_CI_LITERAL:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_CS_LITERAL: {
@@ -118,12 +118,12 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_TOKEN:
-		printf(" %s", term->u.token);
+		fprintf(context->out," %s", term->u.token);
 		break;
 
 	case TYPE_PROSE:
 		/* TODO: escaping to somehow avoid ? */
-		printf(" ? %s ?", term->u.prose);
+		fprintf(context->out," ? %s ?", term->u.prose);
 		break;
 
 	case TYPE_GROUP:
@@ -131,7 +131,7 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 	}
 
-	printf("%s", e);
+	fprintf(context->out,"%s", e);
 }
 
 static void
@@ -153,18 +153,18 @@ output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
-	printf("%s =", rule->name);
+	fprintf(context->out,"%s =", rule->name);
 	for (alt = rule->alts; alt != NULL; alt = alt->next) {
 		output_alt(context, alt);
 
 		if (alt->next != NULL) {
-			printf("\n\t|");
+			fprintf(context->out,"\n\t|");
 		}
 	}
 
-	printf("\n");
-	printf("\t;\n");
-	printf("\n");
+	fprintf(context->out,"\n");
+	fprintf(context->out,"\t;\n");
+	fprintf(context->out,"\n");
 }
 
 void

@@ -149,7 +149,7 @@ node_walk(struct context* context, FILE *f, const struct node *n)
 		const struct list *p;
 
 	case NODE_CI_LITERAL:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case NODE_CS_LITERAL:
@@ -246,12 +246,12 @@ rrll_output(struct context* context, const struct ast_rule *grammar)
 		/* TODO: pass in unsupported bitmap */
 		rewrite_rrd_ci_literals(rrd);
 
-		printf("[`");
+		fprintf(context->out,"[`");
 		escputs(p->name, stdout);
-		printf("` ");
+		fprintf(context->out,"` ");
 
 		node_walk(context, stdout, rrd);
-		printf("]\n");
+		fprintf(context->out,"]\n");
 
 		node_free(rrd);
 	}

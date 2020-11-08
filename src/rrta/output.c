@@ -159,7 +159,7 @@ node_walk(struct context* context, FILE *f, const struct node *n, int depth)
 		const struct list *p;
 
 	case NODE_CI_LITERAL:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case NODE_CS_LITERAL:
@@ -179,7 +179,7 @@ node_walk(struct context* context, FILE *f, const struct node *n, int depth)
 		break;
 
 	case NODE_PROSE:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case NODE_ALT:
@@ -251,13 +251,13 @@ rrta_output(struct context* context, const struct ast_rule *grammar)
 		/* TODO: pass in unsupported bitmap */
 		rewrite_rrd_ci_literals(rrd);
 
-		printf("add('");
+		fprintf(context->out,"add('");
 		escputs(p->name, stdout);
-		printf("', Diagram(\n");
+		fprintf(context->out,"', Diagram(\n");
 
 		node_walk(context, stdout, rrd, 1);
-		printf("));\n");
-		printf("\n");
+		fprintf(context->out,"));\n");
+		fprintf(context->out,"\n");
 
 		node_free(rrd);
 	}

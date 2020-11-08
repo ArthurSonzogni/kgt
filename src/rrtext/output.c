@@ -24,6 +24,7 @@
 #include "../txt.h"
 #include "../ast.h"
 #include "../xalloc.h"
+#include "../context.h"
 
 #include "../rrd/rrd.h"
 #include "../rrd/pretty.h"
@@ -193,17 +194,17 @@ static char *tile[][2] = {
 };
 
 static void
-tile_puts(const char *s, int utf8)
+tile_puts(struct context* context, const char *s, int utf8)
 {
 	const char *p;
 
 	for (p = s; *p != '\0'; p++) {
 		if ((unsigned char) *p < sizeof tile / sizeof *tile) {
-			printf("%s", tile[(unsigned char) *p][utf8]);
+			fprintf(context->out,"%s", tile[(unsigned char) *p][utf8]);
 			continue;
 		}
 
-		printf("%c", *p);
+		fprintf(context->out,"%c", *p);
 	}
 }
 
@@ -412,7 +413,7 @@ node_walk_render(const struct tnode *n, struct render_context *ctx)
 }
 
 static void
-render_rule(const struct tnode *node, int utf8)
+render_rule(struct context* context, const struct tnode *node, int utf8)
 {
 	struct render_context ctx;
 	unsigned w, h;
@@ -444,9 +445,9 @@ render_rule(const struct tnode *node, int utf8)
 
 	for (i = 0; i < h; i++) {
 		rtrim(ctx.lines[i]);
-		printf("    ");
-		tile_puts(ctx.lines[i], utf8);
-		printf("\n");
+		fprintf(context->out,"    ");
+		tile_puts(context, ctx.lines[i], utf8);
+		fprintf(context->out,"\n");
 		free(ctx.lines[i]);
 	}
 
@@ -516,7 +517,7 @@ dim_mono_string(const char *s, unsigned *w, unsigned *a, unsigned *d)
 }
 
 void
-rr_output(const struct ast_rule *grammar, struct dim *dim, int utf8)
+rr_output(struct context* context, const struct ast_rule *grammar, struct dim *dim, int utf8)
 {
 	const struct ast_rule *p;
 
@@ -539,9 +540,9 @@ rr_output(const struct ast_rule *grammar, struct dim *dim, int utf8)
 
 		node_free(rrd);
 
-		printf("%s:\n", p->name);
-		render_rule(tnode, utf8);
-		printf("\n");
+		fprintf(context->out,"%s:\n", p->name);
+		render_rule(context, tnode, utf8);
+		fprintf(context->out,"\n");
 
 		tnode_free(tnode);
 	}
@@ -561,7 +562,7 @@ rrutf8_output(struct context* context, const struct ast_rule *grammar)
 		1
 	};
 
-	rr_output(grammar, &dim, 1);
+	rr_output(context, grammar, &dim, 1);
 }
 
 void
@@ -578,6 +579,6 @@ rrtext_output(struct context* context, const struct ast_rule *grammar)
 		1
 	};
 
-	rr_output(grammar, &dim, 0);
+	rr_output(context, grammar, &dim, 0);
 }
 

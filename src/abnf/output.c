@@ -14,21 +14,22 @@
 #include "../ast.h"
 #include "../bitmap.h"
 #include "../rrd/node.h"
+#include "../context.h"
 
 #include "io.h"
 
-static void output_term(const struct ast_term *term);
+static void output_term(struct context* context, const struct ast_term *term);
 
 static void
-output_byte(char c)
+output_byte(struct context* context, char c)
 {
-	printf("%%x%02X", (unsigned char) c);
+	fprintf(context->out,"%%x%02X", (unsigned char) c);
 }
 
 static void
-output_range(char lo, char hi)
+output_range(struct context* context, char lo, char hi)
 {
-	printf("%%x%02X-%02X", (unsigned char) lo, (unsigned char) hi);
+	fprintf(context->out,"%%x%02X-%02X", (unsigned char) lo, (unsigned char) hi);
 }
 
 static int
@@ -70,14 +71,14 @@ needesc(int c)
 }
 
 static void
-output_string(char prefix, const struct txt *t)
+output_string(struct context* context, char prefix, const struct txt *t)
 {
 	size_t i;
 
 	assert(t != NULL);
 
 	if (t->n == 1 && needesc(*t->p)) {
-		output_byte(*t->p);
+		output_byte(context, *t->p);
 		return;
 	}
 
@@ -87,7 +88,7 @@ output_string(char prefix, const struct txt *t)
 	}
 
 	if (txthas(t, isalpha)) {
-		printf("%%%c", prefix);
+		fprintf(context->out,"%%%c", prefix);
 	}
 
 	putc('\"', stdout);
@@ -146,12 +147,12 @@ collate_ranges(struct bm *bm, const struct ast_alt *alts)
 }
 
 static void
-output_terms(const struct ast_term *terms)
+output_terms(struct context* context, const struct ast_term *terms)
 {
 	const struct ast_term *term;
 
 	for (term = terms; term != NULL; term = term->next) {
-		output_term(term);
+		output_term(context, term);
 
 		if (term->next) {
 			putc(' ', stdout);
@@ -160,7 +161,7 @@ output_terms(const struct ast_term *terms)
 }
 
 static void
-output_alts(const struct ast_alt *alts)
+output_alts(struct context* context, const struct ast_alt *alts)
 {
 	const struct ast_alt *p;
 	struct bm bm;
@@ -180,12 +181,12 @@ output_alts(const struct ast_alt *alts)
 
 		if (!char_terminal(p->terms, &c)) {
 			if (!first) {
-				printf(" / ");
+				fprintf(context->out," / ");
 			} else {
 				first = 0;
 			}
 
-			output_terms(p->terms);
+			output_terms(context, p->terms);
 			p = p->next;
 			continue;
 		}
@@ -197,7 +198,7 @@ output_alts(const struct ast_alt *alts)
 		}
 
 		if (!first) {
-			printf(" / ");
+			fprintf(context->out," / ");
 		} else {
 			first = 0;
 		}
@@ -231,7 +232,7 @@ output_alts(const struct ast_alt *alts)
 				a[0] = (unsigned char) lo;
 				t.p = a;
 				t.n = sizeof a / sizeof *a;
-				output_string('s', &t);
+				output_string(context, 's', &t);
 			}
 			bm_unset(&bm, lo);
 
@@ -239,7 +240,7 @@ output_alts(const struct ast_alt *alts)
 			break;
 
 		default:
-			output_range(lo, hi - 1);
+			output_range(context, lo, hi - 1);
 
 			for (j = lo; j <= hi - 1; j++) {
 				bm_unset(&bm, j);
@@ -251,21 +252,21 @@ output_alts(const struct ast_alt *alts)
 }
 
 static void
-output_group(const struct ast_alt *group)
+output_group(struct context* context, const struct ast_alt *group)
 {
 	if (group->next != NULL) {
-		printf("(");
+		fprintf(context->out,"(");
 	}
 
-	output_alts(group);
+	output_alts(context, group);
 
 	if (group->next != NULL) {
-		printf(")");
+		fprintf(context->out,")");
 	}
 }
 
 static void
-output_repetition(unsigned int min, unsigned int max)
+output_repetition(struct context* context, unsigned int min, unsigned int max)
 {
 	if (min == 0 && max == 1) {
 		assert(!"unreached");
@@ -277,18 +278,18 @@ output_repetition(unsigned int min, unsigned int max)
 	}
 
 	if (min != 0 && min == max) {
-		printf("%u", min);
+		fprintf(context->out,"%u", min);
 		return;
 	}
 
 	if (min > 0) {
-		printf("%u", min);
+		fprintf(context->out,"%u", min);
 	}
 
-	printf("*");
+	fprintf(context->out,"*");
 
 	if (max > 0) {
-		printf("%u", max);
+		fprintf(context->out,"%u", max);
 	}
 }
 
@@ -318,7 +319,7 @@ atomic(const struct ast_term *term)
 }
 
 static void
-output_term(const struct ast_term *term)
+output_term(struct context* context, const struct ast_term *term)
 {
 	int a;
 
@@ -327,12 +328,12 @@ output_term(const struct ast_term *term)
 	a = atomic(term);
 
 	if (term->min == 0 && term->max == 1) {
-		printf("[ ");
+		fprintf(context->out,"[ ");
 	} else {
-		output_repetition(term->min, term->max);
+		output_repetition(context, term->min, term->max);
 
 		if (!a) {
-			printf("( ");
+			fprintf(context->out,"( ");
 		}
 	}
 
@@ -342,47 +343,47 @@ output_term(const struct ast_term *term)
 		break;
 
 	case TYPE_RULE:
-		printf("%s", term->u.rule->name);
+		fprintf(context->out,"%s", term->u.rule->name);
 		break;
 
 	case TYPE_CI_LITERAL:
-		output_string('i', &term->u.literal);
+		output_string(context, 'i', &term->u.literal);
 		break;
 
 	case TYPE_CS_LITERAL:
-		output_string('s', &term->u.literal);
+		output_string(context, 's', &term->u.literal);
 		break;
 
 	case TYPE_TOKEN:
-		printf("%s", term->u.token);
+		fprintf(context->out,"%s", term->u.token);
 		break;
 
 	case TYPE_PROSE:
 		/* TODO: escaping to somehow avoid > */
-		printf("< %s >", term->u.prose);
+		fprintf(context->out,"< %s >", term->u.prose);
 		break;
 
 	case TYPE_GROUP:
-		output_group(term->u.group);
+		output_group(context, term->u.group);
 		break;
 	}
 
 	if (term->min == 0 && term->max == 1) {
-		printf(" ]");
+		fprintf(context->out," ]");
 	} else if (!a) {
-		printf(" )");
+		fprintf(context->out," )");
 	}
 }
 
 static void
 output_rule(struct context* context, const struct ast_rule *rule)
 {
-	printf("%s = ", rule->name);
+	fprintf(context->out,"%s = ", rule->name);
 
-	output_alts(rule->alts);
+	output_alts(context, rule->alts);
 
-	printf("\n");
-	printf("\n");
+	fprintf(context->out,"\n");
+	fprintf(context->out,"\n");
 }
 
 void

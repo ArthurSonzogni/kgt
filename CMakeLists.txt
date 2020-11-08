@@ -21,6 +21,7 @@ list(REMOVE_ITEM kgt_common_files
 )
 add_library(common STATIC ${kgt_common_files})
 add_library(kgt::common ALIAS common)
+set_property(TARGET common PROPERTY C_STANDARD 11)
 list(APPEND libraries common)
 set_target_properties(common PROPERTIES LINKER_LANGUAGE C)
 
@@ -33,6 +34,7 @@ foreach(subdir ${subdirs})
 
     add_library(${library} STATIC ${files})
     add_library(kgt::${library} ALIAS ${library})
+    set_property(TARGET ${library} PROPERTY C_STANDARD 11)
     target_link_libraries(${library} PRIVATE m)
     target_link_libraries(${library} PUBLIC common)
     set_target_properties(${library} PROPERTIES LINKER_LANGUAGE C)
@@ -52,6 +54,7 @@ target_link_libraries(rrtext PUBLIC rrd)
 # The main library:
 add_library(kgt STATIC ${CMAKE_CURRENT_SOURCE_DIR}/src/ast.h)
 add_library(kgt::kgt ALIAS kgt)
+set_property(TARGET kgt PROPERTY C_STANDARD 11)
 set_target_properties(kgt PROPERTIES LINKER_LANGUAGE C)
 target_include_directories(kgt PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 target_link_libraries(kgt PUBLIC ${libraries})

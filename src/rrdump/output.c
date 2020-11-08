@@ -14,6 +14,7 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "../rrd/rrd.h"
 #include "../rrd/pretty.h"
@@ -141,19 +142,19 @@ rrdump_output(struct context* context, const struct ast_rule *grammar)
 		}
 
 		if (!prettify) {
-			printf("%s:\n", p->name);
+			fprintf(context->out,"%s:\n", p->name);
 			node_walk(stdout, rrd, 1);
-			printf("\n");
+			fprintf(context->out,"\n");
 		} else {
-			printf("%s: (before prettify)\n", p->name);
+			fprintf(context->out,"%s: (before prettify)\n", p->name);
 			node_walk(stdout, rrd, 1);
-			printf("\n");
+			fprintf(context->out,"\n");
 
 			rrd_pretty(&rrd);
 
-			printf("%s: (after prettify)\n", p->name);
+			fprintf(context->out,"%s: (after prettify)\n", p->name);
 			node_walk(stdout, rrd, 1);
-			printf("\n");
+			fprintf(context->out,"\n");
 		}
 
 		node_free(rrd);

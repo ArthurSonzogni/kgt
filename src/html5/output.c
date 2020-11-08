@@ -24,6 +24,7 @@
 #include "../txt.h"
 #include "../ast.h"
 #include "../xalloc.h"
+#include "../context.h"
 
 #include "../rrd/rrd.h"
 #include "../rrd/pretty.h"
@@ -78,35 +79,35 @@ output(struct context* context, const struct ast_rule *grammar, int xml)
 {
 	const struct ast_rule *p;
 
-	printf(" <head>\n");
+	fprintf(context->out," <head>\n");
 	if (xml) {
-		printf("  <meta charset='UTF-8'/>\n");
+		fprintf(context->out,"  <meta charset='UTF-8'/>\n");
 	}
 
-	printf("  <style>\n");
+	fprintf(context->out,"  <style>\n");
 
-	printf("      rect, line, path { stroke-width: 1.5px; stroke: black; fill: transparent; }\n");
-	printf("      rect, line, path { stroke-linecap: square; stroke-linejoin: rounded; }\n");
-	printf("      path { fill: transparent; }\n");
-	printf("      text.literal { font-family: monospace; }\n");
-	printf("      a { fill: blue; }\n");
-	printf("      a:hover rect { fill: aliceblue; }\n");
-	printf("      h2 { font-size: inherit; font-weight: inherit; }\n");
-	printf("      line.ellipsis { stroke-dasharray: 1 3.5; }\n");
-	printf("      tspan.hex { font-family: monospace; font-size: 90%%; }\n");
-	printf("      path.arrow { fill: black; }\n");
-	printf("      svg { margin-left: 30px; }\n");
+	fprintf(context->out,"      rect, line, path { stroke-width: 1.5px; stroke: black; fill: transparent; }\n");
+	fprintf(context->out,"      rect, line, path { stroke-linecap: square; stroke-linejoin: rounded; }\n");
+	fprintf(context->out,"      path { fill: transparent; }\n");
+	fprintf(context->out,"      text.literal { font-family: monospace; }\n");
+	fprintf(context->out,"      a { fill: blue; }\n");
+	fprintf(context->out,"      a:hover rect { fill: aliceblue; }\n");
+	fprintf(context->out,"      h2 { font-size: inherit; font-weight: inherit; }\n");
+	fprintf(context->out,"      line.ellipsis { stroke-dasharray: 1 3.5; }\n");
+	fprintf(context->out,"      tspan.hex { font-family: monospace; font-size: 90%%; }\n");
+	fprintf(context->out,"      path.arrow { fill: black; }\n");
+	fprintf(context->out,"      svg { margin-left: 30px; }\n");
 
 	if (css_file != NULL) {
 		cat(css_file, "      ");
 	}
 
-	printf("  </style>\n");
+	fprintf(context->out,"  </style>\n");
 
-	printf(" </head>\n");
-	printf("\n");
+	fprintf(context->out," </head>\n");
+	fprintf(context->out,"\n");
 
-	printf(" <body>\n");
+	fprintf(context->out," <body>\n");
 
 	for (p = grammar; p; p = p->next) {
 		struct tnode *tnode;
@@ -126,54 +127,54 @@ output(struct context* context, const struct ast_rule *grammar, int xml)
 
 		node_free(rrd);
 
-		printf(" <section>\n");
-		printf("  <h2><a name='%s'>%s:</a></h2>\n",
+		fprintf(context->out," <section>\n");
+		fprintf(context->out,"  <h2><a name='%s'>%s:</a></h2>\n",
 			p->name, p->name);
 
 		h = (tnode->a + tnode->d + 1) * 10 + 5;
 		w = (tnode->w + 6) * 10;
 
-		printf("  <svg");
+		fprintf(context->out,"  <svg");
 		if (xml) {
-			printf(" xmlns='http://www.w3.org/2000/svg'");
+			fprintf(context->out," xmlns='http://www.w3.org/2000/svg'");
 		}
-		printf(" height='%u' width='%u'>\n", h, w);
+		fprintf(context->out," height='%u' width='%u'>\n", h, w);
 		svg_render_rule(context, tnode, "", grammar);
-		printf("  </svg>\n");
+		fprintf(context->out,"  </svg>\n");
 
-		printf(" </section>\n");
-		printf("\n");
+		fprintf(context->out," </section>\n");
+		fprintf(context->out,"\n");
 
 		tnode_free(tnode);
 	}
 
-	printf(" </body>\n");
+	fprintf(context->out," </body>\n");
 }
 
 void
 html5_output(struct context* context, const struct ast_rule *grammar)
 {
-	printf("<!DOCTYPE html>\n");
-	printf("<html>\n");
-	printf("\n");
+	fprintf(context->out,"<!DOCTYPE html>\n");
+	fprintf(context->out,"<html>\n");
+	fprintf(context->out,"\n");
 
 	output(context, grammar, 0);
 
-	printf("</html>\n");
+	fprintf(context->out,"</html>\n");
 }
 
 void
 xhtml5_output(struct context* context, const struct ast_rule *grammar)
 {
-	printf("<?xml version='1.0' encoding='utf-8'?>\n");
-	printf("<!DOCTYPE html>\n");
-	printf("<html xml:lang='en' lang='en'\n");
-	printf("  xmlns='http://www.w3.org/1999/xhtml'\n");
-	printf("  xmlns:xlink='http://www.w3.org/1999/xlink'>\n");
-	printf("\n");
+	fprintf(context->out,"<?xml version='1.0' encoding='utf-8'?>\n");
+	fprintf(context->out,"<!DOCTYPE html>\n");
+	fprintf(context->out,"<html xml:lang='en' lang='en'\n");
+	fprintf(context->out,"  xmlns='http://www.w3.org/1999/xhtml'\n");
+	fprintf(context->out,"  xmlns:xlink='http://www.w3.org/1999/xlink'>\n");
+	fprintf(context->out,"\n");
 
 	output(context, grammar, 1);
 
-	printf("</html>\n");
+	fprintf(context->out,"</html>\n");
 }
 

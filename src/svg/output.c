@@ -25,6 +25,7 @@
 #include "../txt.h"
 #include "../ast.h"
 #include "../xalloc.h"
+#include "../context.h"
 
 #include "../rrd/rrd.h"
 #include "../rrd/pretty.h"
@@ -42,8 +43,9 @@ void
 cat(const char *in, const char *indent);
 
 struct render_context {
-	unsigned x, y;
+	FILE* out;
 
+	unsigned x, y;
 	struct path *paths;
 	const struct ast_rule *grammar;
 };
@@ -94,20 +96,20 @@ svg_text(struct render_context *ctx, unsigned w, const struct txt *t, const char
 
 	mid = w / 2;
 
-	printf("    <text x='%u' y='%u' text-anchor='middle'",
+	fprintf(ctx->out,"    <text x='%u' y='%u' text-anchor='middle'",
 		ctx->x + mid, ctx->y + 5);
 
 	if (class != NULL) {
-		printf(" class='%s'", class);
+		fprintf(ctx->out," class='%s'", class);
 	}
 
-	printf(">");
+	fprintf(ctx->out,">");
 
 	for (i = 0; i < t->n; i++) {
 		svg_escputc(stdout, t->p[i]);
 	}
 
-	printf("</text>\n");
+	fprintf(ctx->out,"</text>\n");
 }
 
 static void
@@ -128,16 +130,16 @@ static void
 svg_rect(struct render_context *ctx, unsigned w, unsigned r,
 	const char *class)
 {
-	printf("    <rect x='%u' y='%u' height='%u' width='%u' rx='%u' ry='%u'",
+	fprintf(ctx->out,"    <rect x='%u' y='%u' height='%u' width='%u' rx='%u' ry='%u'",
 		ctx->x, ctx->y - 10,
 		20, w,
 		r, r);
 
 	if (class != NULL) {
-		printf(" class='%s'", class);
+		fprintf(ctx->out," class='%s'", class);
 	}
 
-	printf("/>\n");
+	fprintf(ctx->out,"/>\n");
 }
 
 static void
@@ -170,7 +172,7 @@ svg_ellipsis(struct render_context *ctx, unsigned w, unsigned h)
 	ctx->x += 10;
 	ctx->y -= 10;
 
-	printf("    <line x1='%u' y1='%u' x2='%u' y2='%u' class='ellipsis'/>",
+	fprintf(ctx->out,"    <line x1='%u' y1='%u' x2='%u' y2='%u' class='ellipsis'/>",
 		ctx->x - 5, ctx->y + 5,
 		ctx->x + w - 5, ctx->y + h + 5);
 
@@ -187,7 +189,7 @@ svg_arrow(struct render_context *ctx, unsigned x, unsigned y, int rtl)
 
 	/* XXX: should be markers, but aren't for RFC 7996 */
 	/* 2 for optical correction */
-	printf("    <path d='M%d %u l%d %u v%d z' class='arrow'/>\n",
+	fprintf(ctx->out,"    <path d='M%d %u l%d %u v%d z' class='arrow'/>\n",
 		(int) x + (rtl ? -2 : 2), y, rtl ? 4 : -4, h / 2, -h);
 }
 
@@ -524,7 +526,7 @@ node_walk_render(const struct tnode *n,
 
 	case TNODE_CI_LITERAL:
 		svg_textbox(ctx, &n->u.literal, n->w * 10, 8, "literal");
-		printf("    <text x='%u' y='%u' text-anchor='left' class='ci'>%s</text>\n",
+		fprintf(ctx->out,"    <text x='%u' y='%u' text-anchor='left' class='ci'>%s</text>\n",
 			ctx->x - 20 + 5, ctx->y + 5, "&#x29f8;i");
 		break;
 
@@ -566,7 +568,7 @@ node_walk_render(const struct tnode *n,
 		int dest_exists = !!ast_find_rule(ctx->grammar, n->u.name);
 
 		if (base != NULL && dest_exists) {
-			printf("    <a href='%s#%s'>\n", base, n->u.name); /* XXX: escape */
+			fprintf(ctx->out,"    <a href='%s#%s'>\n", base, n->u.name); /* XXX: escape */
 		}
 		{
 			struct txt t;
@@ -577,7 +579,7 @@ node_walk_render(const struct tnode *n,
 			svg_textbox(ctx, &t, n->w * 10, 0, "rule");
 		}
 		if (base != NULL && dest_exists) {
-			printf("    </a>\n");
+			fprintf(ctx->out,"    </a>\n");
 		}
 		break;
 	}
@@ -594,89 +596,97 @@ node_walk_render(const struct tnode *n,
 }
 
 void
-svg_render_station(unsigned x, unsigned y)
+svg_render_station(struct render_context* ctx)
 {
 	unsigned gap = 4;
 	unsigned h = 12;
 
 	/* .5 to overlap the line width */
-	printf("    <path d='M%u.5 %u v%u m %u 0 v%d' class='station'/>\n",
-		x, y - h / 2, h, gap, -h);
+	fprintf(ctx->out,"    <path d='M%u.5 %u v%u m %u 0 v%d' class='station'/>\n",
+		ctx->x, ctx->y - h / 2, h, gap, -h);
 }
 
 void
 svg_render_rule(struct context* context, const struct tnode *node,
   const char *base, const struct ast_rule *grammar)
 {
-	struct render_context ctx;
-	unsigned w;
+  struct render_context ctx;
+  ctx.out = context->out;
+  unsigned w;
 
-	w = (node->w + 8) * 10;
+  w = (node->w + 8) * 10;
 
-	/*
-	 * Just to save passing it along through every production;
-	 * this is only used informatively, and has nothing to do
-	 * with the structure of rendering.
-	 */
-	ctx.grammar = grammar;
+  /*
+   * Just to save passing it along through every production;
+   * this is only used informatively, and has nothing to do
+   * with the structure of rendering.
+   */
+  ctx.grammar = grammar;
 
-	ctx.paths = NULL;
+  ctx.paths = NULL;
 
-	ctx.x = 5;
-	ctx.y = node->a * 10 + 10;
-	svg_render_station(ctx.x, ctx.y);
-	ctx.x = 10;
-	svg_path_h(&ctx.paths, ctx.x, ctx.y, 20);
+  ctx.x = 5;
+  ctx.y = node->a * 10 + 10;
+  svg_render_station(&ctx);
+  ctx.x = 10;
+  svg_path_h(&ctx.paths, ctx.x, ctx.y, 20);
 
-	ctx.x = w - 50;
-	svg_path_h(&ctx.paths, ctx.x, ctx.y, 20);
-	ctx.x += 20;
-	svg_render_station(ctx.x, ctx.y);
+  ctx.x = w - 50;
+  svg_path_h(&ctx.paths, ctx.x, ctx.y, 20);
+  ctx.x += 20;
+  svg_render_station(&ctx);
 
-	ctx.x = 30;
-	ctx.y = node->a * 10 + 10;
-	node_walk_render(node, &ctx, base);
+  ctx.x = 30;
+  ctx.y = node->a * 10 + 10;
+  node_walk_render(node, &ctx, base);
 
-	/*
-	 * Consolidate adjacent nodes of the same type.
-	 */
-	svg_path_consolidate(&ctx.paths);
+  /*
+   * Consolidate adjacent nodes of the same type.
+   */
+  svg_path_consolidate(&ctx.paths);
 
-	/*
-	 * Next we consolidate on-the-fly to render a single path segment
-	 * for a individual path with differently-typed items which connect
-	 * in a sequence. This is just an effort to produce tidy markup.
-	 */
+  /*
+   * Next we consolidate on-the-fly to render a single path segment
+   * for a individual path with differently-typed items which connect
+   * in a sequence. This is just an effort to produce tidy markup.
+   */
 
-	while (ctx.paths != NULL) {
-		struct path *p;
+  while (ctx.paths != NULL) {
+    struct path *p;
 
-		p = svg_path_find_start(ctx.paths);
+    p = svg_path_find_start(ctx.paths);
 
-		printf("    <path d='M%d %d", p->x, p->y);
+    fprintf(ctx.out, "    <path d='M%d %d", p->x, p->y);
 
-		do {
-			unsigned nx, ny;
+    do {
+      unsigned nx, ny;
 
-			switch (p->type) {
-			case PATH_H: printf(" h%d", p->u.n); break;
-			case PATH_V: printf(" v%d", p->u.n); break;
-			case PATH_Q: printf(" q%d %d %d %d", p->u.q[0], p->u.q[1], p->u.q[2], p->u.q[3]); break;
-			}
+      switch (p->type) {
+      case PATH_H:
+        fprintf(ctx.out, " h%d", p->u.n);
+        break;
+      case PATH_V:
+        fprintf(ctx.out, " v%d", p->u.n);
+        break;
+      case PATH_Q:
+        fprintf(ctx.out, " q%d %d %d %d", p->u.q[0], p->u.q[1], p->u.q[2],
+                p->u.q[3]);
+        break;
+      }
 
-			svg_path_move(p, &nx, &ny);
+      svg_path_move(p, &nx, &ny);
 
-			svg_path_remove(&ctx.paths, p);
+      svg_path_remove(&ctx.paths, p);
 
-			/* consolidate only when not debugging */
-			if (debug) {
-				break;
-			}
+      /* consolidate only when not debugging */
+      if (debug) {
+        break;
+      }
 
-			p = svg_path_find_following(ctx.paths, nx, ny);
-		} while (p != NULL);
+      p = svg_path_find_following(ctx.paths, nx, ny);
+    } while (p != NULL);
 
-		printf("'/>\n");
+    fprintf(ctx.out, "'/>\n");
 	}
 }
 
@@ -851,52 +861,52 @@ svg_output(struct context* context, const struct ast_rule *grammar)
 	w += 12;
 	h += 5;
 
-	printf("<?xml version='1.0' encoding='utf-8'?>\n");
-	printf("<svg\n");
-	printf("  xmlns='http://www.w3.org/2000/svg'\n");
-	printf("  xmlns:xlink='http://www.w3.org/1999/xlink'\n");
-	printf("\n");
-	printf("  width='%u0' height='%u'>\n", w, h * 10 + 60);
-	printf("\n");
+	fprintf(context->out,"<?xml version='1.0' encoding='utf-8'?>\n");
+	fprintf(context->out,"<svg\n");
+	fprintf(context->out,"  xmlns='http://www.w3.org/2000/svg'\n");
+	fprintf(context->out,"  xmlns:xlink='http://www.w3.org/1999/xlink'\n");
+	fprintf(context->out,"\n");
+	fprintf(context->out,"  width='%u0' height='%u'>\n", w, h * 10 + 60);
+	fprintf(context->out,"\n");
 
-	printf("  <style>\n");
+	fprintf(context->out,"  <style>\n");
 
-	printf("    rect, line, path { stroke-width: 1.5px; stroke: black; fill: transparent; }\n");
-	printf("    rect, line, path { stroke-linecap: square; stroke-linejoin: rounded; }\n");
+	fprintf(context->out,"    rect, line, path { stroke-width: 1.5px; stroke: black; fill: transparent; }\n");
+	fprintf(context->out,"    rect, line, path { stroke-linecap: square; stroke-linejoin: rounded; }\n");
 
 	if (debug) {
-		printf("    rect.debug { stroke: none; opacity: 0.75; }\n");
-		printf("    rect.debug.tile { fill: #cccccc; }\n");
-		printf("    rect.debug.node { fill: transparent; stroke-width: 1px; stroke: #ccccff; stroke-dasharray: 2 3; }\n");
-		printf("    rect.debug.justify { fill: #ccccff; }\n");
-		printf("    text.debug.tile { opacity: 0.3; font-family: monospace; font-weight: bold; stroke: none; }\n");
+		fprintf(context->out,"    rect.debug { stroke: none; opacity: 0.75; }\n");
+		fprintf(context->out,"    rect.debug.tile { fill: #cccccc; }\n");
+		fprintf(context->out,"    rect.debug.node { fill: transparent; stroke-width: 1px; stroke: #ccccff; stroke-dasharray: 2 3; }\n");
+		fprintf(context->out,"    rect.debug.justify { fill: #ccccff; }\n");
+		fprintf(context->out,"    text.debug.tile { opacity: 0.3; font-family: monospace; font-weight: bold; stroke: none; }\n");
 	}
 
-	printf("    path { fill: transparent; }\n");
-	printf("    text.literal { font-family: monospace; }\n");
-	printf("    line.ellipsis { stroke-dasharray: 1 3.5; }\n");
-	printf("    tspan.hex { font-family: monospace; font-size: 90%%; }\n");
-	printf("    path.arrow { fill: black; }\n");
+	fprintf(context->out,"    path { fill: transparent; }\n");
+	fprintf(context->out,"    text.literal { font-family: monospace; }\n");
+	fprintf(context->out,"    line.ellipsis { stroke-dasharray: 1 3.5; }\n");
+	fprintf(context->out,"    tspan.hex { font-family: monospace; font-size: 90%%; }\n");
+	fprintf(context->out,"    path.arrow { fill: black; }\n");
 
 	if (css_file != NULL) {
 		cat(css_file, "    ");
 	}
 
-	printf("  </style>\n");
-	printf("\n");
+	fprintf(context->out,"  </style>\n");
+	fprintf(context->out,"\n");
 
 	z = 0;
 
 	for (i = 0, p = grammar; p; p = p->next, i++) {
-		printf("  <g transform='translate(%u %u)'>\n",
+		fprintf(context->out,"  <g transform='translate(%u %u)'>\n",
 			40, z * 10 + 50);
-		printf("    <text x='%d' y='%d'>%s:</text>\n",
+		fprintf(context->out,"    <text x='%d' y='%d'>%s:</text>\n",
 			-30, -10, p->name);
 
 		svg_render_rule(context, a[i], NULL, grammar);
 
-		printf("  </g>\n");
-		printf("\n");
+		fprintf(context->out,"  </g>\n");
+		fprintf(context->out,"\n");
 
 		z += a[i]->a + a[i]->d + 6;
 	}
@@ -907,6 +917,5 @@ svg_output(struct context* context, const struct ast_rule *grammar)
 
 	free(a);
 
-	printf("</svg>\n");
+	fprintf(context->out,"</svg>\n");
 }
-

@@ -67,7 +67,7 @@ output_term(struct context* context, const struct ast_term *term)
 	assert(term->min <= 1);
 	assert(term->max <= 1);
 
-	printf("%s", s);
+	fprintf(context->out,"%s", s);
 
 	switch (term->type) {
 	case TYPE_EMPTY:
@@ -75,11 +75,11 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_RULE:
-		printf(" %s", term->u.rule->name);
+		fprintf(context->out," %s", term->u.rule->name);
 		break;
 
 	case TYPE_CI_LITERAL:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_CS_LITERAL: {
@@ -98,11 +98,11 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_TOKEN:
-		printf(" %s", term->u.token);
+		fprintf(context->out," %s", term->u.token);
 		break;
 
 	case TYPE_PROSE:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_GROUP:
@@ -110,7 +110,7 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 	}
 
-	printf("%s", e);
+	fprintf(context->out,"%s", e);
 }
 
 static void
@@ -132,15 +132,15 @@ output_rule(struct context* context, const struct ast_rule *rule)
 	const struct ast_alt *alt;
 
 	alt = rule->alts;
-	printf("%s =", rule->name);
+	fprintf(context->out,"%s =", rule->name);
 	output_alt(context, alt);
 
 	for (alt = alt->next; alt != NULL; alt = alt->next) {
-		printf("\n\t|");
+		fprintf(context->out,"\n\t|");
 		output_alt(context, alt);
 	}
 
-	printf(" .\n\n");
+	fprintf(context->out," .\n\n");
 }
 
 void
