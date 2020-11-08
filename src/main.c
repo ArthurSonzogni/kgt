@@ -244,7 +244,7 @@ main(int argc, char *argv[])
 
 	out->out(&context, g);
 
-  if (context.reached_undefined) {
+  if (context.reached_unimplemented) {
     fprintf(context.error, "unimplemented\n");
     return EXIT_FAILURE;
   }

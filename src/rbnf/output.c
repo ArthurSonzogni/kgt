@@ -42,7 +42,7 @@ output_group(struct context* context, const struct ast_alt *group)
 		output_group_alt(context, alt);
 
 		if (alt->next != NULL) {
-			printf(" |");
+			fprintf(context->out," |");
 		}
 	}
 }
@@ -88,7 +88,7 @@ output_term(struct context* context, const struct ast_term *term)
 
 	/* TODO: RBNF cannot express literal <>::= etc. maybe output those as rule names */
 
-	printf("%s", s);
+	fprintf(context->out,"%s", s);
 
 	switch (term->type) {
 	case TYPE_EMPTY:
@@ -96,20 +96,20 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_RULE:
-		printf(" <%s>", term->u.rule->name);
+		fprintf(context->out," <%s>", term->u.rule->name);
 		break;
 
 	case TYPE_CI_LITERAL:
 	case TYPE_CS_LITERAL:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_TOKEN:
-		printf(" <%s>", term->u.token);
+		fprintf(context->out," <%s>", term->u.token);
 		break;
 
 	case TYPE_PROSE:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_GROUP:
@@ -117,7 +117,7 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 	}
 
-	printf("%s", e);
+	fprintf(context->out,"%s", e);
 }
 
 static void
@@ -132,7 +132,7 @@ output_alt(struct context* context, const struct ast_alt *alt)
 		output_term(context, term);
 	}
 
-	printf("\n");
+	fprintf(context->out,"\n");
 }
 
 static void
@@ -140,17 +140,17 @@ output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
-	printf("<%s> ::=", rule->name);
+	fprintf(context->out,"<%s> ::=", rule->name);
 
 	for (alt = rule->alts; alt != NULL; alt = alt->next) {
 		output_alt(context, alt);
 
 		if (alt->next != NULL) {
-			printf("\t|");
+			fprintf(context->out,"\t|");
 		}
 	}
 
-	printf("\n");
+	fprintf(context->out,"\n");
 }
 
 void

@@ -70,28 +70,28 @@ output_group(struct context* context, const struct ast_alt *group)
 		output_group_alt(context, alt);
 
 		if (alt->next != NULL) {
-			printf(" |");
+			fprintf(context->out," |");
 		}
 	}
 }
 
 static void
-output_repetition(unsigned int min, unsigned int max)
+output_repetition(struct context* context, unsigned int min, unsigned int max)
 {
 	if (min == 0 && max == 0) {
-		printf("*");
+		fprintf(context->out,"*");
 	} else if (min == 0 && max == 1) {
-		printf("?");
+		fprintf(context->out,"?");
 	} else if (min == 1 && max == 0) {
-		printf("+");
+		fprintf(context->out,"+");
 	} else if (min == 1 && max == 1) {
 		/* no operator */
 	} else if (min == max) {
-		printf("{%u}", min);
+		fprintf(context->out,"{%u}", min);
 	} else if (max == 0) {
-		printf("{%u,}", min);
+		fprintf(context->out,"{%u,}", min);
 	} else {
-		printf("{%u,%u}", min, max);
+		fprintf(context->out,"{%u,%u}", min, max);
 	}
 }
 
@@ -131,7 +131,7 @@ output_term(struct context* context, const struct ast_term *term)
 	a = atomic(term);
 
 	if (!a) {
-		printf(" (");
+		fprintf(context->out," (");
 	}
 
 	switch (term->type) {
@@ -140,7 +140,7 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_RULE:
-		printf(" %s", term->u.rule->name);
+		fprintf(context->out," %s", term->u.rule->name);
 		break;
 
 	case TYPE_CI_LITERAL: {
@@ -158,15 +158,15 @@ output_term(struct context* context, const struct ast_term *term)
 
 				if (uc == lc) {
 					putc('[', stdout);
-					(void) blab_escputc(stdout, term->u.literal.p[i]);
+					(void) blab_escputc(context->out, term->u.literal.p[i]);
 					putc(']', stdout);
 					continue;
 				}
 
 				if (uc != lc) {
 					putc('[', stdout);
-					(void) blab_escputc(stdout, lc);
-					(void) blab_escputc(stdout, uc);
+					(void) blab_escputc(context->out, lc);
+					(void) blab_escputc(context->out, uc);
 					putc(']', stdout);
 				}
 			}
@@ -179,7 +179,7 @@ output_term(struct context* context, const struct ast_term *term)
 			fputs(" \"", stdout);
 
 			for (i = 0; i < term->u.literal.n; i++) {
-				(void) blab_escputc(stdout, term->u.literal.p[i]);
+				(void) blab_escputc(context->out, term->u.literal.p[i]);
 			}
 
 			putc('\"', stdout);
@@ -187,11 +187,11 @@ output_term(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_TOKEN:
-		printf(" %s", term->u.token);
+		fprintf(context->out," %s", term->u.token);
 		break;
 
 	case TYPE_PROSE:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_GROUP:
@@ -200,10 +200,10 @@ output_term(struct context* context, const struct ast_term *term)
 	}
 
 	if (!a) {
-		printf(" )");
+		fprintf(context->out," )");
 	}
 
-	output_repetition(term->min, term->max);
+	output_repetition(context, term->min, term->max);
 }
 
 static void
@@ -227,17 +227,17 @@ output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
-	printf("%s =", rule->name);
+	fprintf(context->out,"%s =", rule->name);
 	for (alt = rule->alts; alt != NULL; alt = alt->next) {
 		output_alt(context, alt);
 
 		if (alt->next != NULL) {
-			printf("\n\t|");
+			fprintf(context->out,"\n\t|");
 		}
 	}
 
-	printf("\n");
-	printf("\n");
+	fprintf(context->out,"\n");
+	fprintf(context->out,"\n");
 }
 
 void

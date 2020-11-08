@@ -15,6 +15,7 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "../rrd/rrd.h"
 #include "../rrd/pretty.h"
@@ -93,7 +94,7 @@ escputt(const struct txt *t, FILE *f)
 }
 
 static void
-rrd_print_dot(const char *prefix, const void *parent, const char *port,
+rrd_print_dot(struct context* context, const char *prefix, const void *parent, const char *port,
 	const struct node *node)
 {
 	if (node == NULL) {
@@ -105,100 +106,100 @@ rrd_print_dot(const char *prefix, const void *parent, const char *port,
 
 	case NODE_ALT:
 	case NODE_ALT_SKIPPABLE:
-		printf("\t{ rank = same;\n");
+		fprintf(context->out,"\t{ rank = same;\n");
 		for (p = node->u.alt; p != NULL; p = p->next) {
-			printf("\t\t\"%s/%p\";\n", prefix, (void *) p->node);
+			fprintf(context->out,"\t\t\"%s/%p\";\n", prefix, (void *) p->node);
 		}
-		printf("\t};\n");
+		fprintf(context->out,"\t};\n");
 		break;
 
 	case NODE_SEQ:
-		printf("\t{ rank = same;\n");
+		fprintf(context->out,"\t{ rank = same;\n");
 		for (p = node->u.seq; p != NULL; p = p->next) {
-			printf("\t\t\"%s/%p\";\n", prefix, (void *) p->node);
+			fprintf(context->out,"\t\t\"%s/%p\";\n", prefix, (void *) p->node);
 		}
-		printf("\t};\n");
+		fprintf(context->out,"\t};\n");
 		break;
 
 	default:
 		break;
 	}
 
-	printf("\t\"%s/%p\"%s -> \"%s/%p\"",
+	fprintf(context->out,"\t\"%s/%p\"%s -> \"%s/%p\"",
 		prefix, parent, port,
 		prefix, (void *) node);
 	if (node->invisible) {
-		printf(" [ color = blue, style = dashed ]");
+		fprintf(context->out," [ color = blue, style = dashed ]");
 	}
-	printf(";\n");
+	fprintf(context->out,";\n");
 
-	printf("\t\"%s/%p\" [ ",
+	fprintf(context->out,"\t\"%s/%p\" [ ",
 		prefix, (void *) node);
 	if (node->invisible) {
-		printf("color = blue, fontcolor = blue, fillcolor = aliceblue, style = \"rounded,dashed\", ");
+		fprintf(context->out,"color = blue, fontcolor = blue, fillcolor = aliceblue, style = \"rounded,dashed\", ");
 	}
 
 	switch (node->type) {
 	case NODE_CI_LITERAL:
-		printf("style = \"%s\", shape = box, label = \"\\\"",
+		fprintf(context->out,"style = \"%s\", shape = box, label = \"\\\"",
 			node->invisible ? "filled,dashed" : "filled");
 		escputt(&node->u.literal, stdout);
-		printf("\\\"\"/i");
+		fprintf(context->out,"\\\"\"/i");
 		break;
 
 	case NODE_CS_LITERAL:
-		printf("style = \"%s\", shape = box, label = \"\\\"",
+		fprintf(context->out,"style = \"%s\", shape = box, label = \"\\\"",
 			node->invisible ? "filled,dashed" : "filled");
 		escputt(&node->u.literal, stdout);
-		printf("\\\"\"");
+		fprintf(context->out,"\\\"\"");
 		break;
 
 	case NODE_RULE:
-		printf("label = \"\\<");
+		fprintf(context->out,"label = \"\\<");
 		escputs(node->u.name, stdout);
-		printf("\\>\"");
+		fprintf(context->out,"\\>\"");
 		break;
 
 	case NODE_PROSE:
 		/* TODO: escaping to somehow avoid ? */
-		printf("label = \"?");
+		fprintf(context->out,"label = \"?");
 		escputs(node->u.prose, stdout);
-		printf("?\"");
+		fprintf(context->out,"?\"");
 		break;
 
 	case NODE_ALT:
-		printf("label = \"ALT\"");
+		fprintf(context->out,"label = \"ALT\"");
 		break;
 
 	case NODE_ALT_SKIPPABLE:
-		printf("label = \"ALT|&epsilon;\"");
+		fprintf(context->out,"label = \"ALT|&epsilon;\"");
 		break;
 
 	case NODE_SEQ:
-		printf("label = \"SEQ\"");
+		fprintf(context->out,"label = \"SEQ\"");
 		break;
 
 	case NODE_LOOP:
-		printf("label = \"<b> &larr;|LOOP "); /* TODO: utf8 */
+		fprintf(context->out,"label = \"<b> &larr;|LOOP "); /* TODO: utf8 */
 
 		if (node->u.loop.min == 1 && node->u.loop.max == 1) {
 			/* nothing */
 		} else if (!node->u.loop.max) {
-			printf("\\{%u,""\\}&times;", node->u.loop.min);
+			fprintf(context->out,"\\{%u,""\\}&times;", node->u.loop.min);
 		} else if (node->u.loop.min == node->u.loop.max) {
-			printf("%u&times;", node->u.loop.min);
+			fprintf(context->out,"%u&times;", node->u.loop.min);
 		} else {
-			printf("\\{%u,%u\\}&times;", node->u.loop.min, node->u.loop.max);
+			fprintf(context->out,"\\{%u,%u\\}&times;", node->u.loop.min, node->u.loop.max);
 		}
 
-		printf("|<f> &rarr;\"");
+		fprintf(context->out,"|<f> &rarr;\"");
 		break;
 
 	default:
-		printf("label = \"?\", color = red");
+		fprintf(context->out,"label = \"?\", color = red");
 	}
 
-	printf(" ];\n");
+	fprintf(context->out," ];\n");
 
 	switch (node->type) {
 		const struct list *p;
@@ -206,19 +207,19 @@ rrd_print_dot(const char *prefix, const void *parent, const char *port,
 	case NODE_ALT:
 	case NODE_ALT_SKIPPABLE:
 		for (p = node->u.alt; p != NULL; p = p->next) {
-			rrd_print_dot(prefix, node, "", p->node);
+			rrd_print_dot(context, prefix, node, "", p->node);
 		}
 		break;
 
 	case NODE_SEQ:
 		for (p = node->u.seq; p != NULL; p = p->next) {
-			rrd_print_dot(prefix, node, "", p->node);
+			rrd_print_dot(context, prefix, node, "", p->node);
 		}
 		break;
 
 	case NODE_LOOP:
-		rrd_print_dot(prefix, node, ":f", node->u.loop.forward);
-		rrd_print_dot(prefix, node, ":b", node->u.loop.backward);
+		rrd_print_dot(context, prefix, node, ":f", node->u.loop.forward);
+		rrd_print_dot(context, prefix, node, ":b", node->u.loop.backward);
 		break;
 
 	default:
@@ -231,9 +232,9 @@ rrdot_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
-	printf("digraph G {\n");
-	printf("\tnode [ shape = record, style = rounded ];\n");
-	printf("\tedge [ dir = none ];\n");
+	fprintf(context->out,"digraph G {\n");
+	fprintf(context->out,"\tnode [ shape = record, style = rounded ];\n");
+	fprintf(context->out,"\tedge [ dir = none ];\n");
 
 	for (p = grammar; p != NULL; p = p->next) {
 		struct node *rrd;
@@ -247,16 +248,16 @@ rrdot_output(struct context* context, const struct ast_rule *grammar)
 			rrd_pretty(&rrd);
 		}
 
-        printf("\t\"%s/%p\" [ shape = plaintext, label = \"%s\" ];\n",
+        fprintf(context->out,"\t\"%s/%p\" [ shape = plaintext, label = \"%s\" ];\n",
 			p->name, (void *) p,
 			p->name);
 
-		rrd_print_dot(p->name, p, "", rrd);
+		rrd_print_dot(context, p->name, p, "", rrd);
 
 		node_free(rrd);
 	}
 
-	printf("}\n");
-	printf("\n");
+	fprintf(context->out,"}\n");
+	fprintf(context->out,"\n");
 }
 

@@ -160,7 +160,7 @@ node_walk(struct context* context, FILE *f, const struct node *n, int depth)
 		const struct list *p;
 
 	case NODE_CI_LITERAL:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case NODE_CS_LITERAL:
@@ -180,7 +180,7 @@ node_walk(struct context* context, FILE *f, const struct node *n, int depth)
 		break;
 
 	case NODE_PROSE:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case NODE_ALT:
@@ -263,24 +263,24 @@ rrparcon_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
-	printf("#!/usr/bin/env python\n");
-	printf("# -*- coding: utf-8 -*-\n");
-	printf("\n");
+	fprintf(context->out,"#!/usr/bin/env python\n");
+	fprintf(context->out,"# -*- coding: utf-8 -*-\n");
+	fprintf(context->out,"\n");
 
-	printf("import sys\n");
-	printf("from collections import OrderedDict\n");
-	printf("\n");
-	printf("from parcon.railroad import Then, Or, Token, Loop, Bullet, Nothing\n");
-	printf("from parcon.railroad import PRODUCTION, TEXT, DESCRIPTION\n");
-	printf("import parcon.railroad.raildraw\n");
-	printf("\n");
+	fprintf(context->out,"import sys\n");
+	fprintf(context->out,"from collections import OrderedDict\n");
+	fprintf(context->out,"\n");
+	fprintf(context->out,"from parcon.railroad import Then, Or, Token, Loop, Bullet, Nothing\n");
+	fprintf(context->out,"from parcon.railroad import PRODUCTION, TEXT, DESCRIPTION\n");
+	fprintf(context->out,"import parcon.railroad.raildraw\n");
+	fprintf(context->out,"\n");
 
-	printf("comment    = lambda t: Token(DESCRIPTION, t)\n");
-	printf("production = lambda t: Token(PRODUCTION, t)\n");
-	printf("text       = lambda t: Token(TEXT, t)\n");
-	printf("\n");
+	fprintf(context->out,"comment    = lambda t: Token(DESCRIPTION, t)\n");
+	fprintf(context->out,"production = lambda t: Token(PRODUCTION, t)\n");
+	fprintf(context->out,"text       = lambda t: Token(TEXT, t)\n");
+	fprintf(context->out,"\n");
 
-	printf("productions = OrderedDict([\n");
+	fprintf(context->out,"productions = OrderedDict([\n");
 
 	for (p = grammar; p != NULL; p = p->next) {
 		struct node *rrd;
@@ -297,54 +297,54 @@ rrparcon_output(struct context* context, const struct ast_rule *grammar)
 		/* TODO: pass in unsupported bitmap */
 		rewrite_rrd_ci_literals(rrd);
 
-		printf("  (\n");
-		printf("    \"");
+		fprintf(context->out,"  (\n");
+		fprintf(context->out,"    \"");
 		escputs(p->name, stdout);
-		printf("\",\n");
-		printf("    Then(\n");
-		printf("      Bullet(),\n");
+		fprintf(context->out,"\",\n");
+		fprintf(context->out,"    Then(\n");
+		fprintf(context->out,"      Bullet(),\n");
 
 		node_walk(context, stdout, rrd, 3);
-		printf(",");
-		printf("\n");
+		fprintf(context->out,",");
+		fprintf(context->out,"\n");
 
-		printf("      Bullet()\n");
-		printf("    )\n");
-		printf("  )");
+		fprintf(context->out,"      Bullet()\n");
+		fprintf(context->out,"    )\n");
+		fprintf(context->out,"  )");
 		if (p->next != NULL) {
-			printf(",");
+			fprintf(context->out,",");
 		}
-		printf("\n");
+		fprintf(context->out,"\n");
 
 		node_free(rrd);
 	}
 
-	printf("])\n");
-	printf("\n");
+	fprintf(context->out,"])\n");
+	fprintf(context->out,"\n");
 
-	printf("options = {\n");
+	fprintf(context->out,"options = {\n");
 
-	printf("  \"raildraw_arrow_width\":       8,\n"); /* 0 also looks nice */
-	printf("  \"raildraw_arrow_height\":      8,\n");
-	printf("  \"raildraw_then_before_arrow\": 8,\n");
-	printf("  \"raildraw_then_after_arrow\":  0,\n");
-	printf("  \"raildraw_or_before\":         8,\n");
-	printf("  \"raildraw_or_after\":          8,\n");
+	fprintf(context->out,"  \"raildraw_arrow_width\":       8,\n"); /* 0 also looks nice */
+	fprintf(context->out,"  \"raildraw_arrow_height\":      8,\n");
+	fprintf(context->out,"  \"raildraw_then_before_arrow\": 8,\n");
+	fprintf(context->out,"  \"raildraw_then_after_arrow\":  0,\n");
+	fprintf(context->out,"  \"raildraw_or_before\":         8,\n");
+	fprintf(context->out,"  \"raildraw_or_after\":          8,\n");
 
-	printf("  \"raildraw_token_padding\":     2,\n");
-	printf("  \"raildraw_bullet_radius\":     4,\n");
-	printf("  \"raildraw_or_radius\":        10,\n");
-	printf("  \"raildraw_line_size\":         2,\n");
+	fprintf(context->out,"  \"raildraw_token_padding\":     2,\n");
+	fprintf(context->out,"  \"raildraw_bullet_radius\":     4,\n");
+	fprintf(context->out,"  \"raildraw_or_radius\":        10,\n");
+	fprintf(context->out,"  \"raildraw_line_size\":         2,\n");
 
-	printf("  \"raildraw_title_before\":     20,\n");
-	printf("  \"raildraw_title_after\":      30,\n");
-	printf("  \"raildraw_scale\":             1\n");
+	fprintf(context->out,"  \"raildraw_title_before\":     20,\n");
+	fprintf(context->out,"  \"raildraw_title_after\":      30,\n");
+	fprintf(context->out,"  \"raildraw_scale\":             1\n");
 
-	printf("}\n");
-	printf("\n");
+	fprintf(context->out,"}\n");
+	fprintf(context->out,"\n");
 
-	printf("# parcon.railroad.raildraw.draw_to_image(sys.argv[1], productions, options, sys.argv[2], True)\n");
-	printf("parcon.railroad.raildraw.draw_to_png(productions, options, sys.argv[2], True)\n");
-	printf("\n");
+	fprintf(context->out,"# parcon.railroad.raildraw.draw_to_image(sys.argv[1], productions, options, sys.argv[2], True)\n");
+	fprintf(context->out,"parcon.railroad.raildraw.draw_to_png(productions, options, sys.argv[2], True)\n");
+	fprintf(context->out,"\n");
 }
 

@@ -27,13 +27,13 @@
 static void output_alt(struct context* context, const struct ast_alt *);
 
 static void
-output_section(const char *section)
+output_section(struct context* context, const char *section)
 {
-	printf("\n%%%s%%\n\n", section);
+	fprintf(context->out,"\n%%%s%%\n\n", section);
 }
 
 static void
-output_literal(const struct txt *t)
+output_literal(struct context* context, const struct txt *t)
 {
 	char c;
 
@@ -41,7 +41,7 @@ output_literal(const struct txt *t)
 	assert(t->p != NULL);
 
 	c = memchr(t->p, '\"', t->n) ? '\'' : '\"';
-	printf("%c%.*s%c; ", c, (int) t->n, t->p, c);
+	fprintf(context->out,"%c%.*s%c; ", c, (int) t->n, t->p, c);
 }
 
 static void
@@ -56,23 +56,23 @@ output_basic(struct context* context, const struct ast_term *term)
 		break;
 
 	case TYPE_RULE:
-		printf("%s; ", term->u.rule->name);
+		fprintf(context->out,"%s; ", term->u.rule->name);
 		break;
 
 	case TYPE_CI_LITERAL:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_CS_LITERAL:
-		output_literal(&term->u.literal);
+		output_literal(context, &term->u.literal);
 		break;
 
 	case TYPE_TOKEN:
-		printf("%s; ", term->u.token);
+		fprintf(context->out,"%s; ", term->u.token);
 		break;
 
 	case TYPE_PROSE:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return;
 
 	case TYPE_GROUP:
@@ -122,19 +122,19 @@ output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
-	printf("\t%s = {\n\t\t", rule->name);
+	fprintf(context->out,"\t%s = {\n\t\t", rule->name);
 
 	for (alt = rule->alts; alt != NULL; alt = alt->next) {
 		output_alt(context, alt);
 
-		printf("\n");
+		fprintf(context->out,"\n");
 
 		if (alt->next != NULL) {
-			printf("\t||\n\t\t");
+			fprintf(context->out,"\t||\n\t\t");
 		}
 	}
 
-	printf("\t};\n\n");
+	fprintf(context->out,"\t};\n\n");
 }
 
 static int
@@ -153,7 +153,7 @@ is_equal(struct context* context, const struct ast_term *a, const struct ast_ter
 	case TYPE_PROSE:      return 0 == strcmp(a->u.prose,         b->u.prose);
 
 	case TYPE_GROUP:
-    context->reached_undefined = true;
+    context->reached_unimplemented = true;
     return false;
 	}
 
@@ -223,9 +223,9 @@ output_terminals(struct context* context, const struct ast_rule *grammar)
 
 		for (t = found; t != NULL; t = next) {
 			next = t->next;
-			printf("\t");
+			fprintf(context->out,"\t");
 			output_basic(context, t);
-			printf("\n");
+			fprintf(context->out,"\n");
 			free(t);
 		}
 	}
@@ -236,13 +236,13 @@ sid_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
-	output_section("types");
+	output_section(context, "types");
 
-	output_section("terminals");
+	output_section(context, "terminals");
 
 	output_terminals(context, grammar);
 
-	output_section("rules");
+	output_section(context, "rules");
 
 	/* TODO list rule declartations */
 
@@ -250,8 +250,8 @@ sid_output(struct context* context, const struct ast_rule *grammar)
 		output_rule(context, p);
 	}
 
-	output_section("entry");
+	output_section(context, "entry");
 
-	printf("\t%s;\n\n", grammar->name);
+	fprintf(context->out,"\t%s;\n\n", grammar->name);
 }
 

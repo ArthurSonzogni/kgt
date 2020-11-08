@@ -17,9 +17,6 @@
  */
 struct context {
   bool reached_unimplemented;
-
-  // TODO(arthursonzogni): Implement correctly file_{output, error} to give the
-  // ability to select the non default ones.
   FILE *out;
   FILE *error;
 
