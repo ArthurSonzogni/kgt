@@ -8,11 +8,12 @@
 #define KGT_BLAB_IO_H
 
 struct ast_rule;
+struct context;
 
 #define blab_ast_unsupported (FEATURE_AST_INVISIBLE)
 
 void
-blab_output(const struct ast_rule *grammar);
+blab_output(struct context* context, const struct ast_rule *grammar);
 
 #endif
 

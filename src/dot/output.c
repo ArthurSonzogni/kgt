@@ -246,7 +246,7 @@ output_rule(const struct ast_rule *grammar,
 }
 
 void
-dot_output(const struct ast_rule *grammar)
+dot_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 

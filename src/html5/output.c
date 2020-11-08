@@ -36,8 +36,8 @@
 
 /* XXX */
 extern struct dim svg_dim;
-void svg_render_rule(const struct tnode *node, const char *base,
-	const struct ast_rule *grammar);
+void svg_render_rule(struct context* context, const struct tnode *node,
+    const char *base, const struct ast_rule *grammar);
 
 extern const char *css_file;
 
@@ -74,7 +74,7 @@ cat(const char *in, const char *indent)
 }
 
 static void
-output(const struct ast_rule *grammar, int xml)
+output(struct context* context, const struct ast_rule *grammar, int xml)
 {
 	const struct ast_rule *p;
 
@@ -138,7 +138,7 @@ output(const struct ast_rule *grammar, int xml)
 			printf(" xmlns='http://www.w3.org/2000/svg'");
 		}
 		printf(" height='%u' width='%u'>\n", h, w);
-		svg_render_rule(tnode, "", grammar);
+		svg_render_rule(context, tnode, "", grammar);
 		printf("  </svg>\n");
 
 		printf(" </section>\n");
@@ -151,19 +151,19 @@ output(const struct ast_rule *grammar, int xml)
 }
 
 void
-html5_output(const struct ast_rule *grammar)
+html5_output(struct context* context, const struct ast_rule *grammar)
 {
 	printf("<!DOCTYPE html>\n");
 	printf("<html>\n");
 	printf("\n");
 
-	output(grammar, 0);
+	output(context, grammar, 0);
 
 	printf("</html>\n");
 }
 
 void
-xhtml5_output(const struct ast_rule *grammar)
+xhtml5_output(struct context* context, const struct ast_rule *grammar)
 {
 	printf("<?xml version='1.0' encoding='utf-8'?>\n");
 	printf("<!DOCTYPE html>\n");
@@ -172,7 +172,7 @@ xhtml5_output(const struct ast_rule *grammar)
 	printf("  xmlns:xlink='http://www.w3.org/1999/xlink'>\n");
 	printf("\n");
 
-	output(grammar, 1);
+	output(context, grammar, 1);
 
 	printf("</html>\n");
 }

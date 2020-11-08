@@ -8,6 +8,7 @@
 #define KGT_EBNFHTML5_IO_H
 
 struct ast_rule;
+struct context;
 
 /*
  * We mark FEATURE_AST_INVISIBLE as unsupported here, because this EBNF
@@ -16,10 +17,10 @@ struct ast_rule;
 #define ebnf_html5_ast_unsupported (FEATURE_AST_INVISIBLE)
 
 void
-ebnf_html5_output(const struct ast_rule *grammar);
+ebnf_html5_output(struct context* context, const struct ast_rule *grammar);
 
 void
-ebnf_xhtml5_output(const struct ast_rule *grammar);
+ebnf_xhtml5_output(struct context* context, const struct ast_rule *grammar);
 
 #endif
 

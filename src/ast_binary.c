@@ -10,6 +10,7 @@
 
 #include "txt.h"
 #include "ast.h"
+#include "context.h"
 
 static int
 walk_alts(const struct ast_alt *alts);
@@ -83,4 +84,3 @@ ast_binary(const struct ast_rule *grammar)
 
 	return 0;
 }
-

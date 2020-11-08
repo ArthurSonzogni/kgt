@@ -19,6 +19,7 @@
 #include "ast.h"
 #include "rewrite.h"
 #include "xalloc.h"
+#include "context.h"
 
 static int
 walk_alts(struct ast_alt *alts);

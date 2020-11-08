@@ -8,13 +8,14 @@
 #define KGT_RRTEXT_IO_H
 
 struct ast_rule;
+struct context;
 
 extern int prettify;
 
 void
-rrutf8_output(const struct ast_rule *);
+rrutf8_output(struct context* context, const struct ast_rule*);
 
 void
-rrtext_output(const struct ast_rule *);
+rrtext_output(struct context* context, const struct ast_rule*);
 
 #endif

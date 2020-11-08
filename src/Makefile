@@ -8,6 +8,7 @@ SRC += src/rewrite_ci.c
 SRC += src/rewrite_invisible.c
 SRC += src/txt.c
 SRC += src/xalloc.c
+SRC += src/context.c
 
 PROG += kgt
 
@@ -26,6 +27,7 @@ ${BUILD}/bin/kgt: ${BUILD}/src/rewrite_ci.o
 ${BUILD}/bin/kgt: ${BUILD}/src/rewrite_invisible.o
 ${BUILD}/bin/kgt: ${BUILD}/src/txt.o
 ${BUILD}/bin/kgt: ${BUILD}/src/xalloc.o
+${BUILD}/bin/kgt: ${BUILD}/src/context.o
 
 .for part in ${PART:Mbnf} ${PART:Mblab} ${PART:Mabnf} ${PART:Miso-ebnf} ${PART:Mrbnf} \
 	${PART:Msid} ${PART:Mdot} ${PART:Mwsn} \

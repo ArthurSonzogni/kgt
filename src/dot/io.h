@@ -8,9 +8,10 @@
 #define KGT_DOT_IO_H
 
 struct ast_rule;
+struct context;
 
 void
-dot_output(const struct ast_rule *grammar);
+dot_output(struct context* context, const struct ast_rule *grammar);
 
 #endif
 

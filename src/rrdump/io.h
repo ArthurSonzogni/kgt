@@ -8,10 +8,11 @@
 #define KGT_RRDUMP_IO_H
 
 struct ast_rule;
+struct context;
 
 extern int prettify;
 
 void
-rrdump_output(const struct ast_rule *);
+rrdump_output(struct context* context, const struct ast_rule*);
 
 #endif

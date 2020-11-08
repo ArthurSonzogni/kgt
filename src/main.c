@@ -16,9 +16,11 @@
 
 #include "txt.h"
 #include "ast.h"
+#include "context.h"
 #include "rewrite.h"
 #include "xalloc.h"
 #include "rrd/node.h"
+#include "context.h"
 
 #include "bnf/io.h"
 #include "blab/io.h"
@@ -47,7 +49,7 @@ const char *css_file;
 struct io {
 	const char *name;
 	struct ast_rule *(*in)(int (*f)(void *), void *);
-	void (*out)(const struct ast_rule *);
+	void (*out)(struct context* context, const struct ast_rule*);
 	enum ast_features ast_unsupported;
 	enum rrd_features rrd_unsupported;
 } io[] = {
@@ -238,10 +240,16 @@ main(int argc, char *argv[])
 		g = new;
 	}
 
-	out->out(g);
+  struct context context = default_context();
+
+	out->out(&context, g);
+
+  if (context.reached_undefined) {
+    fprintf(context.error, "unimplemented\n");
+    return EXIT_FAILURE;
+  }
 
 	/* TODO: free ast */
 
 	return EXIT_SUCCESS;
 }
-

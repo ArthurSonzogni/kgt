@@ -375,7 +375,7 @@ output_term(const struct ast_term *term)
 }
 
 static void
-output_rule(const struct ast_rule *rule)
+output_rule(struct context* context, const struct ast_rule *rule)
 {
 	printf("%s = ", rule->name);
 
@@ -386,12 +386,12 @@ output_rule(const struct ast_rule *rule)
 }
 
 void
-abnf_output(const struct ast_rule *grammar)
+abnf_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
 	for (p = grammar; p != NULL; p = p->next) {
-		output_rule(p);
+		output_rule(context, p);
 	}
 }
 

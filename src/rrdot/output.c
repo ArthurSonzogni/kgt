@@ -227,7 +227,7 @@ rrd_print_dot(const char *prefix, const void *parent, const char *port,
 }
 
 void
-rrdot_output(const struct ast_rule *grammar)
+rrdot_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 

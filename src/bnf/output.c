@@ -17,11 +17,12 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "io.h"
 
 static void
-output_term(const struct ast_term *term)
+output_term(struct context* context, const struct ast_term *term)
 {
 	assert(term->type != TYPE_GROUP);
 	assert(!term->invisible);
@@ -41,8 +42,8 @@ output_term(const struct ast_term *term)
 		break;
 
 	case TYPE_CI_LITERAL:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case TYPE_CS_LITERAL: {
 			char c;
@@ -57,8 +58,8 @@ output_term(const struct ast_term *term)
 		break;
 
 	case TYPE_PROSE:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case TYPE_GROUP:
 		break;
@@ -66,28 +67,28 @@ output_term(const struct ast_term *term)
 }
 
 static void
-output_alt(const struct ast_alt *alt)
+output_alt(struct context* context, const struct ast_alt *alt)
 {
 	const struct ast_term *term;
 
 	assert(!alt->invisible);
 
 	for (term = alt->terms; term != NULL; term = term->next) {
-		output_term(term);
+		output_term(context, term);
 	}
 
 	printf("\n");
 }
 
 static void
-output_rule(const struct ast_rule *rule)
+output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
 	printf("<%s> ::=", rule->name);
 
 	for (alt = rule->alts; alt != NULL; alt = alt->next) {
-		output_alt(alt);
+		output_alt(context, alt);
 
 		if (alt->next != NULL) {
 			printf("\t|");
@@ -98,12 +99,12 @@ output_rule(const struct ast_rule *rule)
 }
 
 void
-bnf_output(const struct ast_rule *grammar)
+bnf_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
 	for (p = grammar; p != NULL; p = p->next) {
-		output_rule(p);
+		output_rule(context, p);
 	}
 }
 
