@@ -21,10 +21,11 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "io.h"
 
-static void output_term(const struct ast_term *term);
+static void output_term(struct context* context, const struct ast_term *term);
 
 int
 blab_escputc(FILE *f, char c)
@@ -51,22 +52,22 @@ blab_escputc(FILE *f, char c)
 }
 
 static void
-output_group_alt(const struct ast_alt *alt)
+output_group_alt(struct context* context, const struct ast_alt *alt)
 {
 	const struct ast_term *term;
 
 	for (term = alt->terms; term != NULL; term = term->next) {
-		output_term(term);
+		output_term(context, term);
 	}
 }
 
 static void
-output_group(const struct ast_alt *group)
+output_group(struct context* context, const struct ast_alt *group)
 {
 	const struct ast_alt *alt;
 
 	for (alt = group; alt != NULL; alt = alt->next) {
-		output_group_alt(alt);
+		output_group_alt(context, alt);
 
 		if (alt->next != NULL) {
 			printf(" |");
@@ -120,7 +121,7 @@ atomic(const struct ast_term *term)
 }
 
 static void
-output_term(const struct ast_term *term)
+output_term(struct context* context, const struct ast_term *term)
 {
 	int a;
 
@@ -190,11 +191,11 @@ output_term(const struct ast_term *term)
 		break;
 
 	case TYPE_PROSE:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case TYPE_GROUP:
-		output_group(term->u.group);
+		output_group(context, term->u.group);
 		break;
 	}
 
@@ -206,14 +207,14 @@ output_term(const struct ast_term *term)
 }
 
 static void
-output_alt(const struct ast_alt *alt)
+output_alt(struct context* context, const struct ast_alt *alt)
 {
 	const struct ast_term *term;
 
 	assert(!alt->invisible);
 
 	for (term = alt->terms; term != NULL; term = term->next) {
-		output_term(term);
+		output_term(context, term);
 
 		if (term->next) {
 			putc(' ', stdout);
@@ -222,13 +223,13 @@ output_alt(const struct ast_alt *alt)
 }
 
 static void
-output_rule(const struct ast_rule *rule)
+output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
 	printf("%s =", rule->name);
 	for (alt = rule->alts; alt != NULL; alt = alt->next) {
-		output_alt(alt);
+		output_alt(context, alt);
 
 		if (alt->next != NULL) {
 			printf("\n\t|");
@@ -240,12 +241,12 @@ output_rule(const struct ast_rule *rule)
 }
 
 void
-blab_output(const struct ast_rule *grammar)
+blab_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
 	for (p = grammar; p != NULL; p = p->next) {
-		output_rule(p);
+		output_rule(context, p);
 	}
 }
 

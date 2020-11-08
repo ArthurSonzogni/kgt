@@ -207,6 +207,7 @@ find_node(const struct list *list, char d)
 	}
 
 	assert(!"unreached");
+  return NULL;
 }
 
 static struct tnode_vlist

@@ -17,13 +17,14 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "io.h"
 
-static void output_alt(const struct ast_alt *alt);
+static void output_alt(struct context* context, const struct ast_alt *alt);
 
 static void
-output_term(const struct ast_term *term)
+output_term(struct context* context, const struct ast_term *term)
 {
 	const char *s, *e;
 	size_t i;
@@ -78,8 +79,8 @@ output_term(const struct ast_term *term)
 		break;
 
 	case TYPE_CI_LITERAL:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case TYPE_CS_LITERAL: {
 			size_t i;
@@ -101,11 +102,11 @@ output_term(const struct ast_term *term)
 		break;
 
 	case TYPE_PROSE:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case TYPE_GROUP:
-		output_alt(term->u.group);
+		output_alt(context, term->u.group);
 		break;
 	}
 
@@ -113,7 +114,7 @@ output_term(const struct ast_term *term)
 }
 
 static void
-output_alt(const struct ast_alt *alt)
+output_alt(struct context* context, const struct ast_alt *alt)
 {
 	const struct ast_term *term;
 
@@ -121,34 +122,34 @@ output_alt(const struct ast_alt *alt)
 	assert(!alt->invisible);
 
 	for (term = alt->terms; term != NULL; term = term->next) {
-		output_term(term);
+		output_term(context, term);
 	}
 }
 
 static void
-output_rule(const struct ast_rule *rule)
+output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
 	alt = rule->alts;
 	printf("%s =", rule->name);
-	output_alt(alt);
+	output_alt(context, alt);
 
 	for (alt = alt->next; alt != NULL; alt = alt->next) {
 		printf("\n\t|");
-		output_alt(alt);
+		output_alt(context, alt);
 	}
 
 	printf(" .\n\n");
 }
 
 void
-wsn_output(const struct ast_rule *grammar)
+wsn_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
 	for (p = grammar; p != NULL; p = p->next) {
-		output_rule(p);
+		output_rule(context, p);
 	}
 }
 

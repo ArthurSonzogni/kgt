@@ -20,10 +20,11 @@
 #include "../txt.h"
 #include "../ast.h"
 #include "../xalloc.h"
+#include "../context.h"
 
 #include "io.h"
 
-static void output_alt(const struct ast_alt *);
+static void output_alt(struct context* context, const struct ast_alt *);
 
 static void
 output_section(const char *section)
@@ -44,7 +45,7 @@ output_literal(const struct txt *t)
 }
 
 static void
-output_basic(const struct ast_term *term)
+output_basic(struct context* context, const struct ast_term *term)
 {
 	assert(term != NULL);
 	assert(!term->invisible);
@@ -59,8 +60,8 @@ output_basic(const struct ast_term *term)
 		break;
 
 	case TYPE_CI_LITERAL:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case TYPE_CS_LITERAL:
 		output_literal(&term->u.literal);
@@ -71,18 +72,18 @@ output_basic(const struct ast_term *term)
 		break;
 
 	case TYPE_PROSE:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case TYPE_GROUP:
 		fputs("{ ", stdout);
-		output_alt(term->u.group);
+		output_alt(context, term->u.group);
 		fputs("}; ", stdout);
 	}
 }
 
 static void
-output_term(const struct ast_term *term)
+output_term(struct context* context, const struct ast_term *term)
 {
 	assert(term != NULL);
 	assert(!term->invisible);
@@ -96,7 +97,7 @@ output_term(const struct ast_term *term)
 		fputs("{ $$; || ", stdout);
 	}
 
-	output_basic(term);
+	output_basic(context, term);
 
 	if (term->min == 0) {
 		fputs("}; ", stdout);
@@ -104,7 +105,7 @@ output_term(const struct ast_term *term)
 }
 
 static void
-output_alt(const struct ast_alt *alt)
+output_alt(struct context* context, const struct ast_alt *alt)
 {
 	const struct ast_term *term;
 
@@ -112,19 +113,19 @@ output_alt(const struct ast_alt *alt)
 	assert(!alt->invisible);
 
 	for (term = alt->terms; term != NULL; term = term->next) {
-		output_term(term);
+		output_term(context, term);
 	}
 }
 
 static void
-output_rule(const struct ast_rule *rule)
+output_rule(struct context* context, const struct ast_rule *rule)
 {
 	const struct ast_alt *alt;
 
 	printf("\t%s = {\n\t\t", rule->name);
 
 	for (alt = rule->alts; alt != NULL; alt = alt->next) {
-		output_alt(alt);
+		output_alt(context, alt);
 
 		printf("\n");
 
@@ -137,7 +138,7 @@ output_rule(const struct ast_rule *rule)
 }
 
 static int
-is_equal(const struct ast_term *a, const struct ast_term *b)
+is_equal(struct context* context, const struct ast_term *a, const struct ast_term *b)
 {
 	if (a->type != b->type) {
 		return 0;
@@ -152,15 +153,15 @@ is_equal(const struct ast_term *a, const struct ast_term *b)
 	case TYPE_PROSE:      return 0 == strcmp(a->u.prose,         b->u.prose);
 
 	case TYPE_GROUP:
-		/* unimplemented */
-		return 0;
+    context->reached_undefined = true;
+    return false;
 	}
 
 	assert(!"unreached");
 }
 
 static void
-output_terminals(const struct ast_rule *grammar)
+output_terminals(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 	struct ast_term *found = NULL;
@@ -196,7 +197,7 @@ output_terminals(const struct ast_rule *grammar)
 				}
 
 				for (t = found; t != NULL; t = t->next) {
-					if (is_equal(t, term)) {
+					if (is_equal(context, t, term)) {
 						break;
 					}
 				}
@@ -223,7 +224,7 @@ output_terminals(const struct ast_rule *grammar)
 		for (t = found; t != NULL; t = next) {
 			next = t->next;
 			printf("\t");
-			output_basic(t);
+			output_basic(context, t);
 			printf("\n");
 			free(t);
 		}
@@ -231,7 +232,7 @@ output_terminals(const struct ast_rule *grammar)
 }
 
 void
-sid_output(const struct ast_rule *grammar)
+sid_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
@@ -239,14 +240,14 @@ sid_output(const struct ast_rule *grammar)
 
 	output_section("terminals");
 
-	output_terminals(grammar);
+	output_terminals(context, grammar);
 
 	output_section("rules");
 
 	/* TODO list rule declartations */
 
 	for (p = grammar; p != NULL; p = p->next) {
-		output_rule(p);
+		output_rule(context, p);
 	}
 
 	output_section("entry");

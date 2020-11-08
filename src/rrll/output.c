@@ -18,6 +18,7 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "../rrd/rrd.h"
 #include "../rrd/pretty.h"
@@ -132,7 +133,7 @@ loop_label(unsigned min, unsigned max, char *s)
 }
 
 static void
-node_walk(FILE *f, const struct node *n)
+node_walk(struct context* context, FILE *f, const struct node *n)
 {
 	assert(f != NULL);
 
@@ -148,8 +149,8 @@ node_walk(FILE *f, const struct node *n)
 		const struct list *p;
 
 	case NODE_CI_LITERAL:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case NODE_CS_LITERAL:
 		fprintf(f, "\"");
@@ -178,7 +179,7 @@ node_walk(FILE *f, const struct node *n)
 		fprintf(f, "<");
 
 		for (p = n->u.alt; p != NULL; p = p->next) {
-			node_walk(f, p->node);
+			node_walk(context, f, p->node);
 			if (p->next != NULL) {
 				fprintf(f, ", ");
 			}
@@ -194,7 +195,7 @@ node_walk(FILE *f, const struct node *n)
 	case NODE_SEQ:
 		fprintf(f, "[");
 		for (p = n->u.seq; p != NULL; p = p->next) {
-			node_walk(f, p->node);
+			node_walk(context, f, p->node);
 			if (p->next != NULL) {
 				fprintf(f, " ");
 			}
@@ -210,12 +211,12 @@ node_walk(FILE *f, const struct node *n)
 
 			r = loop_label(n->u.loop.min, n->u.loop.max, s);
 
-			node_walk(f, n->u.loop.forward);
+			node_walk(context, f, n->u.loop.forward);
 			fprintf(f, "*");
 			if (r > 0) {
 				fprintf(f, "[`%s`", s);
 			}
-			node_walk(f, n->u.loop.backward);
+			node_walk(context, f, n->u.loop.backward);
 			if (r > 0) {
 				fprintf(f, "]");
 			}
@@ -226,7 +227,7 @@ node_walk(FILE *f, const struct node *n)
 }
 
 void
-rrll_output(const struct ast_rule *grammar)
+rrll_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
@@ -249,7 +250,7 @@ rrll_output(const struct ast_rule *grammar)
 		escputs(p->name, stdout);
 		printf("` ");
 
-		node_walk(stdout, rrd);
+		node_walk(context, stdout, rrd);
 		printf("]\n");
 
 		node_free(rrd);

@@ -328,7 +328,7 @@ output(const struct ast_rule *grammar, int xml)
 }
 
 void
-ebnf_html5_output(const struct ast_rule *grammar)
+ebnf_html5_output(struct context* context, const struct ast_rule *grammar)
 {
 	printf("<!DOCTYPE html>\n");
 	printf("<html>\n");
@@ -340,7 +340,7 @@ ebnf_html5_output(const struct ast_rule *grammar)
 }
 
 void
-ebnf_xhtml5_output(const struct ast_rule *grammar)
+ebnf_xhtml5_output(struct context* context, const struct ast_rule *grammar)
 {
 	printf("<?xml version='1.0' encoding='utf-8'?>\n");
 	printf("<!DOCTYPE html>\n");

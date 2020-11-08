@@ -605,8 +605,8 @@ svg_render_station(unsigned x, unsigned y)
 }
 
 void
-svg_render_rule(const struct tnode *node, const char *base,
-	const struct ast_rule *grammar)
+svg_render_rule(struct context* context, const struct tnode *node,
+  const char *base, const struct ast_rule *grammar)
 {
 	struct render_context ctx;
 	unsigned w;
@@ -802,7 +802,7 @@ struct dim svg_dim = {
 };
 
 void
-svg_output(const struct ast_rule *grammar)
+svg_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 	struct tnode **a;
@@ -893,7 +893,7 @@ svg_output(const struct ast_rule *grammar)
 		printf("    <text x='%d' y='%d'>%s:</text>\n",
 			-30, -10, p->name);
 
-		svg_render_rule(a[i], NULL, grammar);
+		svg_render_rule(context, a[i], NULL, grammar);
 
 		printf("  </g>\n");
 		printf("\n");

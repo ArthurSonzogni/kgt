@@ -8,10 +8,11 @@
 #define KGT_RRDOT_IO_H
 
 struct ast_rule;
+struct context;
 
 extern int prettify;
 
 void
-rrdot_output(const struct ast_rule *);
+rrdot_output(struct context* context, const struct ast_rule*);
 
 #endif

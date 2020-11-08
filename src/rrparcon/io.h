@@ -8,6 +8,7 @@
 #define KGT_RRPARCON_IO_H
 
 struct ast_rule;
+struct context;
 
 #define rrparcon_ast_unsupported (FEATURE_AST_BINARY | FEATURE_AST_INVISIBLE)
 #define rrparcon_rrd_unsupported FEATURE_RRD_CI_LITERAL
@@ -15,6 +16,6 @@ struct ast_rule;
 extern int prettify;
 
 void
-rrparcon_output(const struct ast_rule *);
+rrparcon_output(struct context* context, const struct ast_rule*);
 
 #endif

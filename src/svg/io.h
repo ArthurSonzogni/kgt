@@ -8,11 +8,12 @@
 #define KGT_SVG_IO_H
 
 struct ast_rule;
+struct context;
 
 extern int debug;
 extern int prettify;
 
 void
-svg_output(const struct ast_rule *);
+svg_output(struct context* context, const struct ast_rule*);
 
 #endif

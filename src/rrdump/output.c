@@ -128,7 +128,7 @@ node_walk(FILE *f, const struct node *n, int depth)
 }
 
 void
-rrdump_output(const struct ast_rule *grammar)
+rrdump_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 

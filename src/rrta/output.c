@@ -17,6 +17,7 @@
 
 #include "../txt.h"
 #include "../ast.h"
+#include "../context.h"
 
 #include "../rrd/rrd.h"
 #include "../rrd/pretty.h"
@@ -143,7 +144,7 @@ normal(const struct list *list)
 }
 
 static void
-node_walk(FILE *f, const struct node *n, int depth)
+node_walk(struct context* context, FILE *f, const struct node *n, int depth)
 {
 	assert(f != NULL);
 
@@ -158,8 +159,8 @@ node_walk(FILE *f, const struct node *n, int depth)
 		const struct list *p;
 
 	case NODE_CI_LITERAL:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case NODE_CS_LITERAL:
 		print_indent(f, depth);
@@ -178,8 +179,8 @@ node_walk(FILE *f, const struct node *n, int depth)
 		break;
 
 	case NODE_PROSE:
-		fprintf(stderr, "unimplemented\n");
-		exit(EXIT_FAILURE);
+    context->reached_undefined = true;
+    return;
 
 	case NODE_ALT:
 	case NODE_ALT_SKIPPABLE:
@@ -192,7 +193,7 @@ node_walk(FILE *f, const struct node *n, int depth)
 		}
 
 		for (p = n->u.alt; p != NULL; p = p->next) {
-			node_walk(f, p->node, depth + 1);
+			node_walk(context, f, p->node, depth + 1);
 			if (p->next != NULL) {
 				fprintf(f, ",");
 				fprintf(f, "\n");
@@ -206,7 +207,7 @@ node_walk(FILE *f, const struct node *n, int depth)
 		print_indent(f, depth);
 		fprintf(f, "Sequence(\n");
 		for (p = n->u.seq; p != NULL; p = p->next) {
-			node_walk(f, p->node, depth + 1);
+			node_walk(context, f, p->node, depth + 1);
 			if (p->next != NULL) {
 				fprintf(f, ",");
 				fprintf(f, "\n");
@@ -220,10 +221,10 @@ node_walk(FILE *f, const struct node *n, int depth)
 		print_indent(f, depth);
 		fprintf(f, "%s(\n", n->u.loop.min == 0 ? "ZeroOrMore" : "OneOrMore");
 
-		node_walk(f, n->u.loop.forward, depth + 1);
+		node_walk(context, f, n->u.loop.forward, depth + 1);
 		fprintf(f, ",\n");
 
-		node_walk(f, n->u.loop.backward, depth + 1);
+		node_walk(context, f, n->u.loop.backward, depth + 1);
 		fprintf(f, ")");
 
 		break;
@@ -231,7 +232,7 @@ node_walk(FILE *f, const struct node *n, int depth)
 }
 
 void
-rrta_output(const struct ast_rule *grammar)
+rrta_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
@@ -254,7 +255,7 @@ rrta_output(const struct ast_rule *grammar)
 		escputs(p->name, stdout);
 		printf("', Diagram(\n");
 
-		node_walk(stdout, rrd, 1);
+		node_walk(context, stdout, rrd, 1);
 		printf("));\n");
 		printf("\n");
 

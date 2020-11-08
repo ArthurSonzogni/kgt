@@ -548,7 +548,7 @@ rr_output(const struct ast_rule *grammar, struct dim *dim, int utf8)
 }
 
 void
-rrutf8_output(const struct ast_rule *grammar)
+rrutf8_output(struct context* context, const struct ast_rule *grammar)
 {
 	struct dim dim = {
 		dim_mono_txt,
@@ -565,7 +565,7 @@ rrutf8_output(const struct ast_rule *grammar)
 }
 
 void
-rrtext_output(const struct ast_rule *grammar)
+rrtext_output(struct context* context, const struct ast_rule *grammar)
 {
 	struct dim dim = {
 		dim_mono_txt,

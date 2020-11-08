@@ -8,6 +8,7 @@
 #define KGT_RRTA_IO_H
 
 struct ast_rule;
+struct context;
 
 #define rrta_ast_unsupported (FEATURE_AST_BINARY | FEATURE_AST_INVISIBLE)
 #define rrta_rrd_unsupported FEATURE_RRD_CI_LITERAL
@@ -15,7 +16,7 @@ struct ast_rule;
 extern int prettify;
 
 void
-rrta_output(const struct ast_rule *grammar);
+rrta_output(struct context* context, const struct ast_rule *grammar);
 
 #endif
 

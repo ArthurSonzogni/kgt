@@ -8,6 +8,7 @@
 #define KGT_ABNF_IO_H
 
 struct ast_rule;
+struct context;
 
 /*
  * We don't mark FEATURE_AST_INVISIBLE as unsupported here, because ABNF
@@ -18,7 +19,7 @@ struct ast_rule *
 abnf_input(int (*f)(void *opaque), void *opaque);
 
 void
-abnf_output(const struct ast_rule *grammar);
+abnf_output(struct context* context, const struct ast_rule *grammar);
 
 #endif
 

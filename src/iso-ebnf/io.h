@@ -8,6 +8,7 @@
 #define KGT_ISO_EBNF_IO_H
 
 struct ast_rule;
+struct context;
 
 /*
  * We don't mark FEATURE_AST_INVISIBLE as unsupported here, because this EBNF
@@ -20,7 +21,7 @@ struct ast_rule *
 iso_ebnf_input(int (*f)(void *opaque), void *opaque);
 
 void
-iso_ebnf_output(const struct ast_rule *grammar);
+iso_ebnf_output(struct context* context, const struct ast_rule *grammar);
 
 #endif
 

@@ -169,7 +169,7 @@ dim_mono_string(const char *s, unsigned *w, unsigned *a, unsigned *d)
 }
 
 void
-rrtdump_output(const struct ast_rule *grammar)
+rrtdump_output(struct context* context, const struct ast_rule *grammar)
 {
 	const struct ast_rule *p;
 
